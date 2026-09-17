@@ -38,6 +38,9 @@ function Dashboard() {
   const [dispenseResult, setDispenseResult] = useState<any>(null);
   const [dispenseError, setDispenseError] = useState("");
 
+  const hasNearExpiryBatch = (medicineName: string) =>
+    alerts.some((a) => a.medicineName === medicineName);
+
   const fetchMedicines = async () => {
     const res = await api.get("/medicines", {
       params: { search, sortBy, order, page, limit: 5 },
@@ -172,7 +175,7 @@ function Dashboard() {
                       <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full">
                         Expired
                       </span>
-                    ) : med.inDateStock < 50 ? (
+                    ) : hasNearExpiryBatch(med.name) ? (
                       <span className="bg-amber-100 text-amber-700 text-xs px-2 py-1 rounded-full">
                         Near Expiry
                       </span>
