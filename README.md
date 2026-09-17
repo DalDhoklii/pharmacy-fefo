@@ -50,14 +50,31 @@ JWT_SECRET="your-secret-key"
 ### Dispense
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/dispense` | Dispense medicine using FEFO logic — body: `{ medicineId, quantity }`. Returns per-batch allocation breakdown |
+| POST | `/api/dispense` | Dispense medicine using FEFO logic — body: `{ medicineId, quantity }`. Returns per-batch allocation breakdown. Triggers a reorder notification if resulting in-date stock falls below the medicine's threshold. |
 
 ### Alerts
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/alerts/expiring-soon` | Batches expiring within 30 days, excluding empty/expired batches |
 
-All endpoints except `/api/auth/*` require an `Authorization: Bearer <token>` header.
+### Automation (Twist T2)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/clock` | Simulates the daily job — quarantines expired batches, flags batches expiring within 7 days as `NEAR_EXPIRY`, un-flags any that no longer qualify. Idempotent: returns `0` counts on repeat runs with no new changes. Not under `/api` (no auth required, per grading spec). |
+
+### Bulk Import (Twist T4)
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/medicines/import` | Imports a messy batch list. Body: `{ "batches": [...] }`. Tolerates null fields, quantity as `"10 units"` or a number, expiry dates in both `dd/mm/yyyy` and ISO format, and de-duplicates rows (both within the same import and against existing DB batches). Returns `{ imported, deduped, rejected, rejectedDetails }`. |
+
+### Reorder Notifications (Twist T1)
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/outbox` | Lists all reorder notifications sent by the mock Notification Service. Not under `/api` (per grading spec). |
+
+Each `Medicine` has a `reorderThreshold` (default 20). After every successful dispense, if a medicine's in-date stock falls below its threshold, a notification is written to the outbox — throttled to at most one per medicine per hour to avoid duplicate alerts.
+
+All endpoints except `/api/auth/*`, `/clock`, and `/outbox` require an `Authorization: Bearer <token>` header.
 
 ## Debugging Notes
 - If `npx prisma` commands fail, ensure you're using Prisma 5.x (not the 8.x RC) — check `server/package.json`.
