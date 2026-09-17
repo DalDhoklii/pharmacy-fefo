@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { parseQuantity, parseFlexibleDate } from "../utils/parseImport";
 
 const router = Router();
 
@@ -81,6 +82,83 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch medicines" });
+  }
+});
+
+// POST /api/medicines/import - bulk import messy batch data
+router.post("/import", authenticate, async (req: AuthRequest, res) => {
+  try {
+    const rows = req.body.batches;
+
+    if (!Array.isArray(rows)) {
+      return res.status(400).json({ error: "Body must include a 'batches' array" });
+    }
+
+    let imported = 0;
+    let deduped = 0;
+    let rejected = 0;
+    const rejectedDetails: { row: any; reason: string }[] = [];
+
+    // Track batchNo+medicineId pairs seen in THIS import, to catch in-payload duplicates
+    const seenInPayload = new Set<string>();
+
+    for (const row of rows) {
+      const medicineName = typeof row?.medicineName === "string" ? row.medicineName.trim() : null;
+      const batchNo = typeof row?.batchNo === "string" ? row.batchNo.trim() : null;
+      const quantity = parseQuantity(row?.quantity);
+      const expiryDate = parseFlexibleDate(row?.expiryDate);
+
+      if (!medicineName || !batchNo || quantity === null || expiryDate === null) {
+        rejected++;
+        rejectedDetails.push({
+          row,
+          reason: "Missing or unparseable required field (medicineName, batchNo, quantity, expiryDate)",
+        });
+        continue;
+      }
+
+      const dedupeKey = `${medicineName.toLowerCase()}::${batchNo.toLowerCase()}`;
+      if (seenInPayload.has(dedupeKey)) {
+        deduped++;
+        continue;
+      }
+      seenInPayload.add(dedupeKey);
+
+      // Find or create the medicine
+      let medicine = await prisma.medicine.findFirst({
+        where: { name: { equals: medicineName } },
+      });
+      if (!medicine) {
+        medicine = await prisma.medicine.create({
+          data: { name: medicineName },
+        });
+      }
+
+      // Check if this batch already exists in the DB (cross-import dedupe)
+      const existing = await prisma.batch.findFirst({
+        where: { medicineId: medicine.id, batchNo },
+      });
+      if (existing) {
+        deduped++;
+        continue;
+      }
+
+      await prisma.batch.create({
+        data: {
+          medicineId: medicine.id,
+          batchNo,
+          quantity,
+          expiryDate,
+          status: expiryDate <= new Date() ? "QUARANTINED" : "ACTIVE",
+        },
+      });
+      imported++;
+    }
+
+    res.json({ imported, deduped, rejected, rejectedDetails });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Import failed" });
   }
 });
 

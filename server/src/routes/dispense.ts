@@ -1,6 +1,7 @@
 import { Router } from "express";
 import prisma from "../lib/prisma";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { checkAndNotifyReorder } from "../utils/notify";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
         medicineId: Number(medicineId),
         quantity: { gt: 0 },
         expiryDate: { gt: now },
+        status: { not: "QUARANTINED" },
       },
       orderBy: { expiryDate: "asc" },
     });
@@ -77,6 +79,8 @@ router.post("/", authenticate, async (req: AuthRequest, res) => {
 
       return dispenseLog;
     });
+
+    await checkAndNotifyReorder(Number(medicineId));
 
     res.status(200).json({
       message: "Dispensed successfully",

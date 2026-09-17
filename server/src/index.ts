@@ -5,6 +5,8 @@ import authRoutes from "./routes/auth";
 import medicineRoutes from "./routes/medicines";
 import dispenseRoutes from "./routes/dispense";
 import alertRoutes from "./routes/alerts";
+import clockRoutes from "./routes/clock";
+import outboxRoutes from "./routes/outbox";
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/medicines", medicineRoutes);
 app.use("/api/dispense", dispenseRoutes);
 app.use("/api/alerts", alertRoutes);
+app.use("/clock", clockRoutes);
+app.use("/outbox", outboxRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -16,10 +16,12 @@ model User {
 }
 
 model Medicine {
-  id       Int      @id @default(autoincrement())
-  name     String
-  category String?
-  batches  Batch[]
+  id               Int            @id @default(autoincrement())
+  name             String
+  category         String?
+  reorderThreshold Int            @default(20)
+  batches          Batch[]
+  notifications    Notification[]
 }
 
 model Batch {
@@ -29,6 +31,7 @@ model Batch {
   batchNo     String
   quantity    Int
   expiryDate  DateTime
+  status      String   @default("ACTIVE") // ACTIVE | NEAR_EXPIRY | QUARANTINED
   createdAt   DateTime @default(now())
 
   dispenseItems DispenseLogItem[]
@@ -50,4 +53,13 @@ model DispenseLogItem {
   batch         Batch       @relation(fields: [batchId], references: [id])
   batchId       Int
   quantityUsed  Int
+}
+
+model Notification {
+  id           Int      @id @default(autoincrement())
+  medicineId   Int
+  medicine     Medicine @relation(fields: [medicineId], references: [id])
+  message      String
+  currentStock Int
+  createdAt    DateTime @default(now())
 }
