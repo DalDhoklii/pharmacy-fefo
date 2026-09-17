@@ -1,0 +1,21 @@
+{
+  "name": "pharmacy-fefo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DalDhoklii/pharmacy-fefo.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DalDhoklii/pharmacy-fefo/issues"
+  },
+  "homepage": "https://github.com/DalDhoklii/pharmacy-fefo#readme"
+}
