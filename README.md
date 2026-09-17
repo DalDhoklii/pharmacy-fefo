@@ -79,3 +79,5 @@ All endpoints except `/api/auth/*`, `/clock`, and `/outbox` require an `Authoriz
 ## Debugging Notes
 - If `npx prisma` commands fail, ensure you're using Prisma 5.x (not the 8.x RC) — check `server/package.json`.
 - SQLite database file lives at `server/prisma/dev.db`.
+- On macOS, port 5000 may be occupied by AirPlay Receiver (System Settings → General → AirDrop & Handoff). If `npm run dev` in `server/` appears to start but requests fail or return unexpected `403`/CORS errors, either disable AirPlay Receiver or change `PORT` in `server/.env` (and update `client/src/api/client.ts`'s `baseURL` to match).
+- If running `npm install` fails with a syntax error inside `ts-node-dev` (e.g. `missing ) after argument list`), the project's absolute folder path likely contains a special character such as an apostrophe. Move or clone the repo into a path without special characters and reinstall dependencies.
